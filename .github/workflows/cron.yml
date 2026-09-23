@@ -1,0 +1,12 @@
+name: Notifiche Regia
+on:
+  schedule:
+    - cron: '*/10 4-21 * * *'   # ogni 10 minuti, 04:00–21:59 UTC (06–23 ora italiana d'estate)
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Controllo orari e ritardi
+        run: curl -fsS -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.REGIA_URL }}/api/cron"
