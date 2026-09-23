@@ -9,4 +9,8 @@ jobs:
     timeout-minutes: 2
     steps:
       - name: Controllo orari e ritardi
-        run: curl -fsS -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.REGIA_URL }}/api/cron"
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          REGIA_URL: ${{ secrets.REGIA_URL }}
+        run: |
+          curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$REGIA_URL/api/cron"
