@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Regia Branco</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="icon" href="/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Regia">
+<meta name="theme-color" content="#F2F3F0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131411" media="(prefers-color-scheme: dark)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#F2F3F0; --surface:#FFFFFF; --sunk:#E9EBE6; --ink:#1C1E1A; --muted:#62675E; --line:#D9DCD4;
+  --gold:#8E6A0E; --gold-soft:#F3EAD2; --tp:#1D7348; --tp-soft:#DDF0E5; --sl:#AE3226; --sl-soft:#F7DEDA;
+  --warn:#9A5F00; --warn-soft:#F8E9CC;
+  --sans:"IBM Plex Sans", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#131411; --surface:#1C1E1A; --sunk:#171915; --ink:#ECEDE7; --muted:#9A9F94; --line:#2F322C;
+    --gold:#D8AD45; --gold-soft:#3A3120; --tp:#52C68F; --tp-soft:#1C3328; --sl:#F07A6C; --sl-soft:#3D2220;
+    --warn:#E6A93D; --warn-soft:#3A2E17; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131411; --surface:#1C1E1A; --sunk:#171915; --ink:#ECEDE7; --muted:#9A9F94; --line:#2F322C;
+  --gold:#D8AD45; --gold-soft:#3A3120; --tp:#52C68F; --tp-soft:#1C3328; --sl:#F07A6C; --sl-soft:#3D2220;
+  --warn:#E6A93D; --warn-soft:#3A2E17; color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg); color:var(--ink); font:15px/1.5 var(--sans); padding-inline:20px; padding-block:0 48px}
+.num{font-family:var(--mono); font-variant-numeric:tabular-nums}
+h1,h2,h3{margin:0; text-wrap:balance}
+button,input,textarea,select{font:inherit; color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+
+/* barra di stato */
+.bar{position:sticky; top:env(safe-area-inset-top,0px); z-index:5; background:var(--bg); border-bottom:1px solid var(--line);
+  display:flex; flex-wrap:wrap; align-items:center; gap:12px 28px; padding-block:14px; margin-bottom:20px}
+.brand{display:flex; align-items:baseline; gap:10px; margin-right:auto}
+.brand h1{font-size:19px; font-weight:700; letter-spacing:-.01em}
+.brand span{color:var(--muted); font-size:13px}
+.stat{display:flex; flex-direction:column; min-width:88px}
+.stat small{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted)}
+.stat b{font-family:var(--mono); font-size:20px; font-weight:600; font-variant-numeric:tabular-nums}
+.pos{color:var(--tp)} .neg{color:var(--sl)}
+.btn{border:1px solid var(--line); background:var(--surface); border-radius:6px; padding:7px 12px; font-size:14px; font-weight:500}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+.btn.gold{background:var(--gold); color:var(--surface); border-color:var(--gold)}
+.btn.small{padding:4px 9px; font-size:13px}
+.btn[disabled]{opacity:.45; cursor:not-allowed}
+
+.banner{background:var(--gold-soft); border:1px solid var(--gold); color:var(--ink); border-radius:6px; padding:10px 14px;
+  display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin-bottom:18px; font-size:14px}
+
+.grid{display:grid; grid-template-columns:minmax(0,5fr) minmax(0,7fr); gap:24px; align-items:start}
+@media (max-width:900px){ .grid{grid-template-columns:minmax(0,1fr)} }
+
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:16px}
+.panel h2{font-size:15px; font-weight:600; margin-bottom:12px; display:flex; justify-content:space-between; align-items:baseline; gap:8px}
+.panel h2 small{font-weight:400; color:var(--muted); font-size:13px}
+.col{display:flex; flex-direction:column; gap:20px}
+
+label{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; display:block; margin-bottom:4px}
+textarea,input[type=text],input[type=number],input[type=datetime-local],input[type=date],input[type=time]{
+  width:100%; background:var(--sunk); border:1px solid var(--line); border-radius:6px; padding:8px 10px}
+textarea{min-height:130px; resize:vertical; font-family:var(--mono); font-size:13px}
+.row{display:flex; flex-wrap:wrap; gap:10px; align-items:end}
+.row > div{flex:1 1 150px}
+.hint{font-size:13px; color:var(--muted); margin:6px 0 0}
+.parsed{margin-top:10px; font-size:13px; padding:8px 10px; border-radius:6px; background:var(--sunk); border:1px dashed var(--line)}
+
+/* coda inoltri */
+.queue{display:flex; flex-direction:column; gap:8px; list-style:none; margin:0; padding:0}
+.item{border:1px solid var(--line); border-left:4px solid var(--line); border-radius:6px; padding:10px 12px; display:grid; gap:6px}
+.item.k-tp,.item.k-alltp,.item.k-chiusura{border-left-color:var(--tp)}
+.item.k-sl{border-left-color:var(--sl)}
+.item.k-resoconto{border-left-color:var(--gold)}
+.item.done{opacity:.55}
+.item-top{display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between}
+.item-title{font-weight:600; font-size:14px}
+.item-meta{font-size:12px; color:var(--muted)}
+.chip{font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; padding:2px 7px; border-radius:99px; white-space:nowrap}
+.chip.todo{background:var(--warn-soft); color:var(--warn)}
+.chip.late{background:var(--sl-soft); color:var(--sl)}
+.chip.ok{background:var(--sunk); color:var(--muted)}
+.chip.vip{background:var(--sunk); color:var(--muted)}
+.actions{display:flex; flex-wrap:wrap; gap:6px}
+.empty{color:var(--muted); font-size:14px; padding:12px 0}
+
+/* tabs */
+.tabs{display:flex; flex-wrap:wrap; gap:4px; border-bottom:1px solid var(--line); margin-bottom:14px}
+.tab{background:none; border:0; border-bottom:2px solid transparent; padding:8px 12px; font-weight:500; color:var(--muted); margin-bottom:-1px}
+.tab[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--gold)}
+
+.tablewrap{overflow-x:auto}
+table{width:100%; border-collapse:collapse; font-size:13px}
+th,td{text-align:left; padding:7px 8px; border-bottom:1px solid var(--line); white-space:nowrap}
+th{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-weight:600}
+td.num{text-align:right} th.r{text-align:right}
+.tps{display:flex; gap:3px}
+.tpdot{width:18px; height:18px; border-radius:4px; font-size:10px; display:grid; place-items:center; background:var(--sunk); color:var(--muted); font-family:var(--mono)}
+.tpdot.hit{background:var(--tp-soft); color:var(--tp); font-weight:600}
+
+.phr-group{margin-bottom:16px}
+.phr-group h3{font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600; margin-bottom:6px}
+.phr{display:flex; gap:10px; align-items:flex-start; justify-content:space-between; padding:9px 0; border-top:1px solid var(--line)}
+.phr p{margin:0; white-space:pre-wrap; font-size:14px; flex:1}
+.phr.off p{color:var(--muted); text-decoration:line-through; text-decoration-color:var(--line)}
+.phr .why{display:block; font-size:12px; color:var(--warn); text-decoration:none; margin-top:2px}
+
+pre.out{background:var(--sunk); border:1px solid var(--line); border-radius:6px; padding:12px; white-space:pre-wrap; font-family:var(--sans); font-size:14px; margin:10px 0}
+
+.slot{display:grid; grid-template-columns:auto 92px minmax(0,1fr) auto; gap:10px; align-items:center; padding:8px 0; border-top:1px solid var(--line)}
+.slot .lbl{font-size:14px} .slot .lbl small{display:block; color:var(--muted); font-size:12px}
+.slot input[type=time]{padding:5px 6px}
+@media (max-width:520px){ .slot{grid-template-columns:auto 84px minmax(0,1fr)} .slot .days{grid-column:3} }
+
+.log{list-style:none; margin:0; padding:0; font-size:13px; max-height:200px; overflow:auto}
+.log li{padding:5px 0; border-top:1px solid var(--line)}
+.log time{color:var(--muted); font-family:var(--mono); margin-right:8px}
+
+.shots{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px}
+@media (max-width:520px){ .shots{grid-template-columns:minmax(0,1fr)} }
+.shot{border:1px dashed var(--line); border-radius:6px; background:var(--sunk); min-height:110px; display:grid; place-items:center; position:relative; cursor:pointer; overflow:hidden; padding:6px}
+.shot span{font-size:13px; color:var(--muted); font-weight:500}
+.shot.has{border-style:solid; border-color:var(--gold)}
+.shot.has span{position:absolute; top:6px; left:8px; background:var(--surface); color:var(--ink); padding:1px 6px; border-radius:4px; font-size:12px}
+.shot img{max-width:100%; max-height:150px; display:block}
+.shot:focus{outline:2px solid var(--gold)}
+.spin{display:inline-block; width:12px; height:12px; border:2px solid var(--line); border-top-color:var(--gold); border-radius:50%; vertical-align:-1px; margin-right:6px}
+@media (prefers-reduced-motion:no-preference){ .spin{animation:sp 1s linear infinite} @keyframes sp{to{transform:rotate(360deg)}} }
+.lock{position:fixed; inset:0; z-index:30; background:var(--bg); display:grid; place-items:center; padding:24px}
+.lock form{width:min(340px,100%); display:flex; flex-direction:column; gap:12px}
+.lock h2{font-size:22px}
+.lock input{font-size:22px; letter-spacing:.3em; text-align:center; font-family:var(--mono)}
+.lock .err{color:var(--sl); font-size:14px; min-height:1.2em; margin:0}
+.toasts{position:fixed; right:16px; bottom:calc(16px + env(safe-area-inset-bottom,0px)); display:flex; flex-direction:column; gap:8px; z-index:20; max-width:min(380px, calc(100vw - 32px))}
+.toast{background:var(--ink); color:var(--bg); border-radius:8px; padding:12px 14px; font-size:14px; box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.toast b{display:block; margin-bottom:2px}
+@media (prefers-reduced-motion:no-preference){ .toast{animation:in .2s ease-out} @keyframes in{from{transform:translateY(8px); opacity:.4}} }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="brand"><h1>Regia Branco</h1><span>XAUUSD · VIP → pubblico</span></div>
+  <div class="stat"><small>Oggi</small><b id="sDay">—</b></div>
+  <div class="stat"><small>Settimana</small><b id="sWeek">—</b></div>
+  <div class="stat"><small>Da inoltrare</small><b id="sTodo">0</b></div>
+  <div class="stat"><small>Prossimo</small><b id="sNext" style="font-size:14px; font-family:var(--sans)">—</b></div>
+  <button class="btn gold" id="btnNotif">Attiva notifiche</button>
+</header>
+
+<div class="lock" id="lock" hidden>
+  <form id="pinForm">
+    <h2>Regia Branco</h2>
+    <p class="hint" style="margin:0">Inserisci il PIN per aprire la regia.</p>
+    <input type="password" inputmode="numeric" autocomplete="current-password" id="pin" aria-label="PIN">
+    <p class="err" id="pinErr"></p>
+    <button class="btn primary" type="submit">Entra</button>
+  </form>
+</div>
+<div class="banner" id="installHint" hidden>
+  <span>Per ricevere le notifiche su iPhone: tocca <b>Condividi</b> → <b>Aggiungi alla schermata Home</b>, poi apri la Regia dall'icona e tocca <b>Attiva notifiche</b>.</span>
+</div>
+<div class="banner" id="syncErr" hidden></div>
+
+<main class="grid">
+  <div class="col">
+    <section class="panel">
+      <h2>Incolla messaggio VIP <small>segnale, TP, stop, resoconto</small></h2>
+      <label for="msg">Testo del messaggio</label>
+      <textarea id="msg" placeholder="Es. TP2 ✅ +45 pips (SELL 4352.89), seconda posizione chiusa"></textarea>
+      <div class="row" style="margin-top:10px">
+        <div><label for="link">Link del messaggio (tasto destro → Copia link)</label><input type="text" id="link" placeholder="https://t.me/c/…/1234"></div>
+        <div style="flex:0 1 200px"><label for="when">Orario VIP</label><input type="datetime-local" id="when"></div>
+      </div>
+      <div id="preview" class="parsed" hidden></div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn primary" id="btnAdd">Aggiungi</button>
+        <p class="hint" style="margin:0">Se lasci vuoto l'orario, usa l'ora attuale.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Da inoltrare nel pubblico <small id="qCount"></small></h2>
+      <ul class="queue" id="queue"></ul>
+      <p class="hint">Regola: TP <b>e</b> stop si inoltrano allo stesso modo, e il resoconto va inoltrato ogni sera, anche se negativo. Un messaggio è <b>in ritardo</b> dopo <span id="dlTxt">10</span> minuti.</p>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="panel">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" data-tab="ana" aria-selected="false">Analisi</button>
+        <button class="tab" role="tab" data-tab="ops" aria-selected="true">Operazioni</button>
+        <button class="tab" role="tab" data-tab="phr" aria-selected="false">Frasi</button>
+        <button class="tab" role="tab" data-tab="rep" aria-selected="false">Resoconto</button>
+        <button class="tab" role="tab" data-tab="lot" aria-selected="false">Tabella lotti</button>
+        <button class="tab" role="tab" data-tab="plan" aria-selected="false">Programma</button>
+      </div>
+
+      <div data-pane="ana" hidden>
+        <div class="row">
+          <button class="btn" id="btnLast">Leggi ultima analisi</button>
+          <p class="hint" id="lastMeta" style="margin:0">Dal canale pubblico t.me/cesarexau</p>
+        </div>
+        <pre class="out" id="lastAna" hidden></pre>
+        <button class="btn" id="btnCopyLast" hidden>Copia ultima analisi</button>
+        <p class="hint">La nuova analisi con la skill si genera dalla Regia sul Mac (Avvia Regia.command → scheda Analisi), perché usa Claude Code installato lì.</p>
+      </div>
+
+      <div data-pane="ops">
+        <div class="tablewrap"><table>
+          <thead><tr><th>Ora</th><th>Op.</th><th class="r">Entrata</th><th class="r">Stop</th><th>TP</th><th class="r">Pips medi</th><th class="r">R</th><th>Stato</th></tr></thead>
+          <tbody id="opsBody"></tbody>
+        </table></div>
+        <p class="hint">Pips medi = pesati sulle 4 posizioni (10/20/30/40%). R = risultato rispetto al rischio iniziale (entrata → stop). Gli stop valgono sulla parte ancora aperta.</p>
+      </div>
+
+      <div data-pane="phr" hidden>
+        <p class="hint" style="margin:0 0 12px">Le frasi si sbloccano in base al risultato vero di oggi (<b id="phrDay">—</b>). Quelle barrate oggi non sarebbero vere.</p>
+        <div id="phrases"></div>
+      </div>
+
+      <div data-pane="rep" hidden>
+        <div class="row">
+          <div style="flex:0 1 180px"><label for="repDate">Giorno</label><input type="date" id="repDate"></div>
+          <button class="btn primary" id="btnCopyRep">Copia resoconto</button>
+        </div>
+        <pre class="out" id="repOut"></pre>
+        <p class="hint">Se il VIP pubblica già il suo resoconto, inoltra quello; questo ti serve per controllare che torni o per mandarlo tu.</p>
+      </div>
+
+      <div data-pane="lot" hidden>
+        <div class="row">
+          <div style="flex:2 1 260px"><label for="lDesc">Movimento</label><input type="text" id="lDesc" value="dalla rottura dei 4345 fino al secondo target a 4370"></div>
+          <div><label for="lTime">Orario analisi</label><input type="text" id="lTime" value="19:08"></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div><label for="lEntry">Entrata</label><input type="number" step="0.01" id="lEntry" value="4345"></div>
+          <div><label for="lTarget">Target</label><input type="number" step="0.01" id="lTarget" value="4370"></div>
+          <div><label for="lStop">Stop</label><input type="number" step="0.01" id="lStop" value="4338"></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div><label for="lAcc">Conto esempio ($)</label><input type="number" id="lAcc" value="1000"></div>
+          <div><label for="lRisk">Rischio %</label><input type="number" step="0.5" id="lRisk" value="1"></div>
+          <button class="btn primary" id="btnCopyLot">Copia messaggio</button>
+        </div>
+        <pre class="out" id="lotOut"></pre>
+      </div>
+
+      <div data-pane="plan" hidden>
+        <p class="hint" style="margin:0 0 8px">A questi orari (ora italiana) ricevi una notifica push con cosa pubblicare, anche a telefono bloccato. Può arrivare con qualche minuto di ritardo.</p>
+        <div id="slots"></div>
+        <div class="row" style="margin-top:14px">
+          <div style="flex:0 1 220px"><label for="deadline">Minuti per inoltrare TP/stop</label><input type="number" id="deadline" min="1" value="10"></div>
+          <button class="btn" id="btnTest">Prova notifica</button>
+          <button class="btn" id="btnExport">Esporta backup</button>
+          <label class="btn" style="text-transform:none; letter-spacing:0; font-size:14px; color:var(--ink); margin:0">Importa backup<input type="file" id="fileImport" accept="application/json" hidden></label>
+        </div>
+        <h2 style="margin-top:20px; font-size:14px">Ultime notifiche</h2>
+        <ul class="log" id="log"></ul>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>
+(function(){
+const W=[0.1,0.2,0.3,0.4];
+const KEY='regia-branco-v1';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,10);
+const pad=n=>String(n).padStart(2,'0');
+const hhmm=t=>{const d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes())};
+const ddmm=t=>{const d=new Date(t);return pad(d.getDate())+'/'+pad(d.getMonth()+1)};
+const dayKey=t=>{const d=new Date(t);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+const fmtR=r=>r==null||isNaN(r)?'—':(r>=0?'+':'−')+Math.abs(r).toFixed(2)+'R';
+const clsR=r=>r==null?'':(r>0.004?'pos':(r<-0.004?'neg':''));
+const eur=n=>n.toLocaleString('it-IT',{maximumFractionDigits:2});
+const weekStart=t=>{const d=new Date(t);d.setHours(0,0,0,0);const wd=(d.getDay()+6)%7;d.setDate(d.getDate()-wd);return d.getTime()};
+
+const DEFAULT_SLOTS=[
+ {id:'mattina',t:'07:00',days:'feriali',on:true,label:'Carica del mattino',hint:'una frase dalla sezione Mattina'},
+ {id:'analisi',t:'09:30',days:'feriali',on:true,label:'Analisi mattutina',hint:'livelli + 2 long e 1 short (skill analisi-oro-cesare)'},
+ {id:'membri',t:'13:00',days:'feriali',on:true,label:'Risultati dei membri',hint:'solo screenshot verificati'},
+ {id:'pomeriggio',t:'17:30',days:'feriali',on:true,label:'Come mi muovo adesso',hint:'aggiornamento pomeridiano'},
+ {id:'resoconto',t:'21:00',days:'feriali',on:true,label:'Resoconto serale',hint:'inoltra quello del VIP, anche se negativo'},
+ {id:'pillola',t:'11:00',days:'weekend',on:true,label:'Pillola del weekend',hint:'contenuto didattico, mercati chiusi'}
+];
+
+let S=load();
+function blank(){return {ops:[],events:[],fired:{},log:[],example:false,settings:{deadline:10,slots:JSON.parse(JSON.stringify(DEFAULT_SLOTS))}}}
+function load(){try{const r=localStorage.getItem(KEY);if(r){const s=JSON.parse(r);s.settings=s.settings||blank().settings;s.fired=s.fired||{};s.log=s.log||[];return s}}catch(e){}return null}
+let syncTimer=null,pending=false,pulled=false;
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}clearTimeout(syncTimer);pending=true;syncTimer=setTimeout(pushState,700)}
+const DEVICE=(()=>{try{let d=localStorage.getItem(KEY+'-device');if(!d){d=uid();localStorage.setItem(KEY+'-device',d)}return d}catch(e){return 'x'}})();
+function pin(){try{return localStorage.getItem(KEY+'-pin')||''}catch(e){return ''}}
+async function api(path,opts={}){const r=await fetch(path,{...opts,headers:{'Content-Type':'application/json','x-regia-pin':pin(),...(opts.headers||{})}});
+  if(r.status===401){showLock('PIN errato o scaduto.');throw new Error('PIN')}return r.json()}
+async function pushState(){if(!pulled)return;try{const {log,fired,...rest}=S;await api('/api/state',{method:'PUT',body:JSON.stringify({state:rest,deviceId:DEVICE})});$('#syncErr').hidden=true;pending=false}
+  catch(e){if(e.message!=='PIN'){$('#syncErr').hidden=false;$('#syncErr').textContent='Non riesco a salvare online: controlla la connessione. I dati restano su questo telefono e li reinvio al prossimo salvataggio.'}}}
+async function pullState(){if(pending&&pulled)return;const j=await api('/api/state');pulled=true;if(j.ok&&j.state){const log=S.log;S={...blank(),...j.state,log:log||[],fired:{}};try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}else if(j.ok&&!j.state){pushState()}render()}
+function showLock(msg){$('#lock').hidden=false;$('#pinErr').textContent=msg||'';setTimeout(()=>$('#pin').focus(),50)}
+
+/* ---------- parser ---------- */
+function num(s){return parseFloat(String(s).replace(',','.'))}
+function parse(text){
+  const t=text.trim(); if(!t) return null;
+  const ref=t.match(/\((BUY|SELL)\s+([\d.,]+)\)/i);
+  const side=ref?ref[1].toUpperCase():null, fill=ref?num(ref[2]):null;
+  if(/RESOCONTO DELLA GIORNATA/i.test(t)) return {type:'resoconto'};
+  if(/tutti i target presi/i.test(t)){const p=t.match(/\+\s*(\d+)\s*pips/i);return {type:'alltp',side,fill,pips:p?+p[1]:null}}
+  const tp=t.match(/TP\s*([1-4])\s*✅\s*\+?\s*(\d+)\s*pips/i);
+  if(tp) return {type:'tp',n:+tp[1],pips:+tp[2],side,fill};
+  if(/(SL toccato|stop\s*loss\s*preso|stop preso|stop toccato)/i.test(t)) return {type:'sl',side,fill};
+  if(/(chiusa in profitto|portata a casa|chiuso in profitto|chiusura manuale)/i.test(t)){const px=t.match(/chius\w*\s+a\s+([\d.,]{6,})/i);return {type:'chiusura',side,fill,price:px?num(px[1]):null}}
+  const sig=t.match(/XAUUSD\s+(BUY|SELL)[\s\S]*?Entry:\s*([\d.,]+)\s*-\s*([\d.,]+)[\s\S]*?SL:\s*([\d.,]+)/i);
+  const tps=[...t.matchAll(/TP([1-4]):\s*([\d.,]+)/gi)];
+  if(sig&&tps.length>=1){const arr=[null,null,null,null];tps.forEach(m=>arr[+m[1]-1]=num(m[2]));
+    return {type:'segnale',side:sig[1].toUpperCase(),e1:num(sig[2]),e2:num(sig[3]),sl:num(sig[4]),tps:arr}}
+  const at=t.match(/Siamo a\s*([\d.,]+)/i);
+  if(at) return {type:'aggiornamento',side,fill,price:num(at[1])};
+  return {type:'altro'};
+}
+const TYPE_LABEL={segnale:'Segnale (resta nel VIP)',tp:'Target preso',alltp:'Tutti i target presi',sl:'Stop toccato',chiusura:'Chiusura manuale',aggiornamento:'Aggiornamento (resta nel VIP)',resoconto:'Resoconto della giornata',altro:'Messaggio non riconosciuto'};
+const FORWARD={tp:true,alltp:true,sl:true,chiusura:true,resoconto:true};
+
+/* ---------- operazioni ---------- */
+function risk(op){const f=op.fill??(op.e1+op.e2)/2;return op.sl?Math.abs(f-op.sl):null}
+function dir(op){return op.side==='BUY'?1:-1}
+function findOp(side,fill){
+  if(!side||fill==null) return null;
+  const c=S.ops.filter(o=>o.side===side);
+  let o=c.filter(o=>o.fill!=null&&Math.abs(o.fill-fill)<0.01).sort((a,b)=>b.time-a.time)[0];
+  if(o) return o;
+  o=c.filter(o=>o.fill==null&&o.e1!=null&&fill>=Math.min(o.e1,o.e2)-0.6&&fill<=Math.max(o.e1,o.e2)+0.6).sort((a,b)=>(a.status==='aperta'?0:1)-(b.status==='aperta'?0:1)||b.time-a.time)[0];
+  return o||null;
+}
+function stub(side,fill,time){const op={id:uid(),side,fill,e1:null,e2:null,sl:null,tps:[null,null,null,null],time,hit:[false,false,false,false],tpPips:[null,null,null,null],closedW:0,r:0,wpips:0,status:'aperta',stopped:false,stub:true};S.ops.push(op);return op}
+function closeTp(op,i,pips){ // chiude la posizione i (0-based)
+  if(op.hit[i]) return 0;
+  if(pips==null&&op.tps[i]!=null&&op.fill!=null) pips=Math.round(Math.abs(op.tps[i]-op.fill)*10);
+  op.hit[i]=true; op.tpPips[i]=pips; op.closedW+=W[i]; op.wpips+=W[i]*(pips||0);
+  const rk=risk(op); const dr=(rk&&pips!=null)?W[i]*(pips/10)/rk:0; op.r+=dr; return dr;
+}
+function finish(op,t){if(op.closedW>0.999){op.status='chiusa';op.closedAt=t}}
+
+function ingest(text,link,time,opts={}){
+  const p=parse(text); if(!p) return null;
+  const ev={id:uid(),time,kind:p.type,text:text.trim(),link:link||'',rDelta:0,toForward:!!FORWARD[p.type],forwarded:!!opts.forwarded,reminded:!!opts.forwarded};
+  let op=null;
+  if(p.type==='segnale'){
+    op={id:uid(),side:p.side,e1:p.e1,e2:p.e2,sl:p.sl,tps:p.tps,fill:null,time,hit:[false,false,false,false],tpPips:[null,null,null,null],closedW:0,r:0,wpips:0,status:'aperta',stopped:false};
+    S.ops.push(op); ev.label=`${p.side} ${p.e1}–${p.e2} · SL ${p.sl}`;
+  } else if(['tp','alltp','sl','chiusura','aggiornamento'].includes(p.type)){
+    op=findOp(p.side,p.fill)||(p.side?stub(p.side,p.fill,time):null);
+    if(op&&op.fill==null&&p.fill!=null) op.fill=p.fill;
+    const tag=op?`${op.side} ${op.fill??''}`:'operazione sconosciuta';
+    if(op&&p.type==='tp'){let dr=0;for(let i=0;i<p.n-1;i++) if(!op.hit[i]&&op.tps[i]!=null) dr+=closeTp(op,i,null);dr+=closeTp(op,p.n-1,p.pips);ev.rDelta=dr;finish(op,time);ev.label=`TP${p.n} ✅ +${p.pips} pips · ${tag}`}
+    if(op&&p.type==='alltp'){let dr=0;for(let i=0;i<4;i++) if(!op.hit[i]) dr+=closeTp(op,i,i===3?p.pips:null);ev.rDelta=dr;op.closedW=1;finish(op,time);ev.label=`Tutti i target ✅ +${p.pips??'?'} pips · ${tag}`}
+    if(op&&p.type==='sl'){const rem=Math.max(0,1-op.closedW);const rk=risk(op);const dr=rk?-rem:0;op.r+=dr;op.wpips-=rem*(rk?rk*10:0);op.closedW=1;op.stopped=true;op.status='chiusa';op.closedAt=time;ev.rDelta=dr;ev.label=`Stop ❌ · ${tag}${rk?' · '+fmtR(dr):''}`}
+    if(op&&p.type==='chiusura'){let px=p.price??opts.price??op.lastPrice;
+      if(px==null&&!opts.silent){const a=window.prompt(`Chiusura manuale di ${tag}: a che prezzo? (serve per calcolare il risultato)`, '');px=a?num(a):null}
+      const rem=Math.max(0,1-op.closedW);const rk=risk(op);let dr=0;
+      if(px!=null&&op.fill!=null){const d=(px-op.fill)*dir(op);op.wpips+=rem*d*10;if(rk)dr=rem*d/rk}
+      op.r+=dr;op.closedW=1;op.status='chiusa';op.closedAt=time;op.manual=px;ev.rDelta=dr;ev.label=`Chiusa a mano ${px??'?'} · ${tag}`}
+    if(op&&p.type==='aggiornamento'){op.lastPrice=p.price;ev.label=`Siamo a ${p.price} · ${tag}`}
+    if(!op) ev.label=TYPE_LABEL[p.type];
+  } else if(p.type==='resoconto'){ev.label='Resoconto VIP della giornata'}
+  else ev.label='Messaggio non riconosciuto';
+  ev.opId=op?op.id:null;
+  S.events.push(ev);
+  return ev;
+}
+
+/* ---------- conti ---------- */
+function sumR(from,to){return S.events.filter(e=>e.time>=from&&e.time<to).reduce((a,e)=>a+(e.rDelta||0),0)}
+function dayBounds(t){const d=new Date(t);d.setHours(0,0,0,0);return [d.getTime(),d.getTime()+864e5]}
+function dayR(t=Date.now()){const [a,b]=dayBounds(t);return sumR(a,b)}
+function weekR(t=Date.now()){const a=weekStart(t);return sumR(a,a+7*864e5)}
+function weekCounts(t=Date.now()){const a=weekStart(t),b=a+7*864e5;const cl=S.ops.filter(o=>o.status==='chiusa'&&o.closedAt>=a&&o.closedAt<b);
+  return {tp:cl.filter(o=>!o.stopped&&o.r>=0).length+cl.filter(o=>o.stopped&&o.r>0).length,stop:cl.filter(o=>o.stopped&&o.r<=0).length,open:S.ops.filter(o=>o.status==='aperta').length}}
+
+/* ---------- notifiche ---------- */
+let actx=null;
+function beep(){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=880;g.gain.value=.06;o.connect(g);g.connect(actx.destination);o.start();o.stop(actx.currentTime+.18)}catch(e){}}
+let titleTimer=null;
+function flashTitle(msg){clearInterval(titleTimer);let on=false;titleTimer=setInterval(()=>{document.title=on?'Regia Branco':'● '+msg;on=!on},900)}
+window.addEventListener('focus',()=>{clearInterval(titleTimer);document.title='Regia Branco'});
+function notify(title,body){
+  S.log.unshift({t:Date.now(),title,body});S.log=S.log.slice(0,40);try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+  const el=document.createElement('div');el.className='toast';el.innerHTML=`<b>${esc(title)}</b>${esc(body)}`;$('#toasts').appendChild(el);setTimeout(()=>el.remove(),9000);
+  beep(); if(document.hidden) flashTitle(title); renderLog();
+}
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+let swReg=null;
+async function updNotifBtn(){const b=$('#btnNotif');
+  if(isIOS&&!standalone){b.textContent='Installa per le notifiche';b.disabled=false;$('#installHint').hidden=false;return}
+  if(!('serviceWorker' in navigator)||!('PushManager' in window)){b.textContent='Notifiche non supportate';b.disabled=true;return}
+  if(Notification.permission==='denied'){b.textContent='Notifiche bloccate';b.disabled=true;return}
+  try{swReg=swReg||await navigator.serviceWorker.ready;const sub=await swReg.pushManager.getSubscription();
+    if(sub&&Notification.permission==='granted'){b.textContent='Notifiche attive';b.classList.remove('gold');b.disabled=true}}catch(e){}}
+function b64(k){const p='='.repeat((4-k.length%4)%4);const r=atob((k+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from([...r].map(c=>c.charCodeAt(0)))}
+$('#btnNotif').onclick=async()=>{
+  if(isIOS&&!standalone){$('#installHint').hidden=false;$('#installHint').scrollIntoView({behavior:'smooth'});return}
+  try{const perm=await Notification.requestPermission();if(perm!=='granted'){updNotifBtn();return}
+    swReg=await navigator.serviceWorker.ready;
+    const {publicKey}=await (await fetch('/api/subscribe')).json();
+    const sub=(await swReg.pushManager.getSubscription())||await swReg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64(publicKey)});
+    const j=await api('/api/subscribe',{method:'POST',body:JSON.stringify({subscription:sub.toJSON(),deviceId:DEVICE})});
+    notify('Notifiche attive',`Dispositivi collegati: ${j.devices}. Arrivano anche a telefono bloccato.`);
+  }catch(e){if(e.message!=='PIN')notify('Notifiche non attivate',e.message)}
+  updNotifBtn();
+};
+
+function slotDate(s,base){const [h,m]=s.t.split(':').map(Number);const d=new Date(base);d.setHours(h,m,0,0);return d}
+function isWeekend(d){const g=new Date(d).getDay();return g===0||g===6}
+function slotBody(s){
+  const r=dayR(),w=weekR();
+  switch(s.id){
+    case 'mattina': return 'Manda una frase di carica (sezione Frasi → Mattina).';
+    case 'analisi': return 'Analisi mattutina: scheda Analisi → incolla 1H, 15m, 5m → Genera.';
+    case 'membri': return 'Risultati membri: pubblica solo screenshot verificati.';
+    case 'pomeriggio': return 'Come mi muovo adesso: scheda Analisi → screenshot → Genera.';
+    case 'resoconto': {const has=S.events.some(e=>e.kind==='resoconto'&&dayKey(e.time)===dayKey(Date.now()));
+      return `Oggi ${fmtR(r)} · settimana ${fmtR(w)}. `+(has?'Inoltra il resoconto VIP già in coda.':'Incolla il resoconto VIP (o copia quello generato) e inoltralo, anche se negativo.')}
+    case 'pillola': return 'Pillola del weekend: un argomento didattico, chiusura con disclaimer.';
+  } return s.hint||'';
+}
+function nextSlot(now=Date.now()){
+  let best=null;for(let k=0;k<8;k++){const base=now+k*864e5;for(const s of S.settings.slots){if(!s.on)continue;const we=isWeekend(base);if((s.days==='feriali'&&we)||(s.days==='weekend'&&!we))continue;const d=slotDate(s,base).getTime();if(d>now&&(!best||d<best.d))best={s,d}}if(best)break}return best}
+function tick(){render()}
+
+/* ---------- frasi ---------- */
+const PHR=[
+ {g:'Mattina',c:'any',t:'Siamo già carichi branco!!!!🐺🐺🐺'},
+ {g:'Mattina',c:'any',t:'Iniziamo a scaldare i motori stamattina brancooo😎🔥'},
+ {g:'Mattina',c:'any',t:'Tra un po mando anche un’analisi per voi che non siete ancora nel branco VIP😎'},
+ {g:'Mattina',c:'any',t:'buongiorno branco ☕️ tra poco arriva l’analisi della mattina, livelli pronti 🐺'},
+ {g:'Durante la giornata',c:'pos',t:'CHE GIORNATA RAGAZZI 😎🔥'},
+ {g:'Durante la giornata',c:'strong',t:'Oggi stiamo volando!!!🚀🚀🚀'},
+ {g:'Durante la giornata',c:'huge',t:'Ragazzi ho perso il conto di quanti pips abbiamo fatto oggi 🤣🤣🤣🤣'},
+ {g:'Durante la giornata',c:'pos',t:'nel VIP oggi siamo a {day} realizzati. giornata che gira bene, avanti con disciplina 🔥'},
+ {g:'Dopo uno stop',c:'stop',t:'stop preso nel VIP. fa parte del gioco: rischio deciso prima di entrare, niente panico e niente vendetta. si va avanti 🐺'},
+ {g:'Dopo uno stop',c:'stop',t:'ve lo faccio vedere anche quando va male: stop preso, rischio rispettato. chi vi mostra solo i verdi vi racconta metà della storia 🤝'},
+ {g:'Giornata negativa',c:'neg',t:'giornata storta branco: {day} oggi. succede, nessuno le prende tutte. domani si riparte con la stessa disciplina 🐺'},
+ {g:'Giornata negativa',c:'neg',t:'oggi il mercato ha avuto ragione lui. stop rispettati, rischio sotto controllo, zero trade di vendetta. è così che si resta in piedi 💪'},
+ {g:'Trasparenza',c:'any',t:'ragazzi, qui vedete tutto: i target e anche gli stop, e ogni sera il resoconto col netto vero.\nsettimana finora nel VIP: {week} ({wtp} chiuse in profitto, {wstop} a stop, {wopen} ancora aperte).\ntante vanno bene, qualcuna va male: conta il rischio/rendimento, non il singolo trade 🤝 vamos branco.'},
+ {g:'Chiusura',c:'any',t:'chi vuole entrare nel VIP mi scriva: lì trovate i segnali completi con entrata, stop e target, e il resoconto ogni sera, stop compresi 🐺'}
+];
+function condOk(c){const r=dayR();const stopToday=S.events.some(e=>e.kind==='sl'&&dayKey(e.time)===dayKey(Date.now()));
+  switch(c){case 'any':return [true];case 'pos':return [r>0.5,'serve una giornata positiva (almeno +0.5R)'];case 'strong':return [r>=2,'serve almeno +2R oggi'];case 'huge':return [r>=4,'serve almeno +4R oggi'];
+  case 'neg':return [r<0,'solo se la giornata è negativa'];case 'stop':return [stopToday,'solo dopo uno stop di oggi']}return [true]}
+function fill(t){const wc=weekCounts();return t.replace('{day}',fmtR(dayR())).replace('{week}',fmtR(weekR())).replace('{wtp}',wc.tp).replace('{wstop}',wc.stop).replace('{wopen}',wc.open)}
+
+/* ---------- resoconto ---------- */
+function report(dateStr){
+  const [y,m,d]=dateStr.split('-').map(Number);const a=new Date(y,m-1,d).getTime(),b=a+864e5;
+  const ops=S.ops.filter(o=>(o.time>=a&&o.time<b)||(o.closedAt>=a&&o.closedAt<b)||(o.status==='aperta'&&o.time<b)||S.events.some(e=>e.opId===o.id&&e.time>=a&&e.time<b)).sort((x,z)=>x.time-z.time);
+  const L=['RESOCONTO DELLA GIORNATA','','XAUUSD · LA NOSTRA SALA VIP',''];
+  let nTp=0,nSl=0,nOpen=0;
+  for(const o of ops){
+    const when=(o.time>=a?'':ddmm(o.time)+' ')+hhmm(o.time);
+    const px=o.fill??(o.e1!=null?((o.e1+o.e2)/2).toFixed(2):'?');
+    const icon=o.side==='BUY'?'🟢':'🔴';
+    let maxN=0;o.hit.forEach((h,i)=>{if(h)maxN=i+1});const mp=maxN?o.tpPips[maxN-1]:null;
+    let out;
+    const closedHere=o.status==='chiusa'&&o.closedAt>=a&&o.closedAt<b;
+    if(o.status==='chiusa'){
+      if(o.stopped) out=maxN?`TP${maxN} presi, poi STOP ❌ · netto ${fmtR(o.r)}`:`STOP ❌ · ${fmtR(o.r)}`;
+      else if(o.manual!=null&&maxN<4) out=`chiusa a mano ${o.manual} ✅ · netto ${fmtR(o.r)}`;
+      else out=`tutti i target ✅ · media ${Math.round(o.wpips)} pips · netto ${fmtR(o.r)}`;
+      if(closedHere){if(o.r>0)nTp++;else nSl++}
+    } else {out=maxN?`fino a TP${maxN} +${mp} pips ✅ · runner in corso ⏳ (${fmtR(o.r)} finora)`:'in corso ⏳';nOpen++}
+    L.push(`${when} · ${icon} ${o.side} ${px} → ${out}`);
+  }
+  if(!ops.length) L.push('nessuna operazione registrata in questo giorno');
+  const wc=weekCounts(a);
+  L.push('',`${nTp} chiuse in profitto`,`${nSl} chiuse a stop`,`${nOpen} ancora in corso`,`risultato realizzato oggi: ${fmtR(sumR(a,b))}`,'',`SETTIMANA FINORA`,`${wc.tp} in profitto · ${wc.stop} stop · netto ${fmtR(weekR(a))}`,'','ogni operazione del VIP è qui, stop compresi.');
+  return L.join('\n');
+}
+
+/* ---------- tabella lotti ---------- */
+function lotMsg(){
+  const desc=$('#lDesc').value.trim(),e=num($('#lEntry').value),tg=num($('#lTarget').value),st=num($('#lStop').value),tm=$('#lTime').value.trim(),acc=num($('#lAcc').value)||1000,rp=num($('#lRisk').value)||1;
+  if([e,tg,st].some(isNaN)) return 'inserisci entrata, target e stop';
+  const g=Math.round(Math.abs(tg-e)*10),l=Math.round(Math.abs(e-st)*10);
+  const lots=[0.01,0.05,0.10,0.20,0.50,1];
+  const rows=lots.map(x=>`${x.toFixed(2).replace('.',',')} lotti → +${eur(g*x*10)} dollari 💵 · allo stop −${eur(l*x*10)}`).join('\n');
+  const riskUsd=acc*rp/100;const lot=Math.floor(riskUsd/(l*10)*100)/100;
+  return `PER I NUOVI… IN TERMINI PRATICI QUANTO AVRESTE GUADAGNATO DA QUESTA OPERAZIONE? 👇\n\nallora, ${desc} sono ${g} pips. lo stop era ${l} pips sotto l'entrata.\n\necco cosa avrebbe portato a casa chi ha seguito l'operazione, e cosa avrebbe perso se fosse andata storta, a seconda del lotto:\n\n${rows}\n\nstessa identica operazione, stesso identico movimento. cambia solo il lotto, e cambia tutto: il guadagno e anche la perdita.\n\nl'analisi era nel canale alle ${tm}, prima che succedesse. questa è andata bene, non tutte vanno così: per questo il lotto conta più del singolo trade.\n\nil lotto non si sceglie guardando questa tabella e sognando il numero grosso. si sceglie in base a quanto sei disposto a perdere: con un conto da ${eur(acc)} dollari e rischio ${eur(rp)}% (${eur(riskUsd)} dollari), su questo stop il lotto giusto era ${lot>0?lot.toFixed(2).replace('.',','):'sotto 0,01: operazione da saltare'}.\n\nla costanza vale più del colpo singolo. 💪`;
+}
+
+/* ---------- link telegram ---------- */
+function tgLinks(u){
+  if(!u) return null;let m=u.match(/t\.me\/c\/(\d+)\/(\d+)/);if(m) return {app:`tg://privatepost?channel=${m[1]}&post=${m[2]}`,web:u};
+  m=u.match(/t\.me\/([A-Za-z0-9_]{4,})\/(\d+)/);if(m) return {app:`tg://resolve?domain=${m[1]}&post=${m[2]}`,web:u};
+  return {app:null,web:u};
+}
+
+/* ---------- copia ---------- */
+async function copy(text,btn){try{await navigator.clipboard.writeText(text);if(btn){const o=btn.textContent;btn.textContent='Copiato';setTimeout(()=>btn.textContent=o,1200)}}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(_){}ta.remove();if(btn){btn.textContent='Copiato'}}}
+
+/* ---------- render ---------- */
+let tab='ops';
+function render(){
+  const r=dayR(),w=weekR();
+  $('#sDay').textContent=fmtR(r);$('#sDay').className=clsR(r);
+  $('#sWeek').textContent=fmtR(w);$('#sWeek').className=clsR(w);
+  const todo=S.events.filter(e=>e.toForward&&!e.forwarded);
+  $('#sTodo').textContent=todo.length;
+  const ns=nextSlot();$('#sNext').textContent=ns?`${ns.s.label} · ${new Date(ns.d).toLocaleDateString('it-IT',{weekday:'short'})} ${ns.s.t}`:'—';
+  $('#dlTxt').textContent=S.settings.deadline;
+  renderQueue();renderOps();renderPhr();renderRep();renderSlots();renderLog();
+  $('#lotOut').textContent=lotMsg();
+}
+function renderQueue(){
+  const now=Date.now(),dl=S.settings.deadline*6e4;
+  const list=S.events.filter(e=>e.toForward).sort((a,b)=>(a.forwarded-b.forwarded)||b.time-a.time).slice(0,40);
+  $('#qCount').textContent=list.length?`${list.filter(e=>!e.forwarded).length} in attesa`:'';
+  if(!list.length){$('#queue').innerHTML='<li class="empty">Niente da inoltrare. Incolla un TP, uno stop o il resoconto del VIP.</li>';return}
+  $('#queue').innerHTML=list.map(e=>{
+    const late=!e.forwarded&&now>e.time+dl;const L=tgLinks(e.link);
+    const chip=e.forwarded?'<span class="chip ok">inoltrato</span>':late?'<span class="chip late">in ritardo</span>':'<span class="chip todo">da inoltrare</span>';
+    return `<li class="item k-${e.kind} ${e.forwarded?'done':''}">
+      <div class="item-top"><span class="item-title">${esc(e.label)}</span>${chip}</div>
+      <div class="item-meta num">${ddmm(e.time)} ${hhmm(e.time)}${e.rDelta?` · <span class="${clsR(e.rDelta)}">${fmtR(e.rDelta)}</span>`:''}</div>
+      <div class="actions">
+        ${L&&L.app?`<a class="btn small primary" href="${esc(L.app)}">Apri in Telegram</a>`:''}
+        ${L&&L.web?`<a class="btn small" href="${esc(L.web)}" target="_blank" rel="noopener">Apri link</a>`:''}
+        ${!L?`<button class="btn small" data-act="link" data-id="${e.id}">Aggiungi link</button>`:''}
+        <button class="btn small" data-act="copy" data-id="${e.id}">Copia testo</button>
+        <button class="btn small" data-act="fwd" data-id="${e.id}">${e.forwarded?'Rimetti in coda':'Segna inoltrato'}</button>
+        <button class="btn small" data-act="del" data-id="${e.id}" aria-label="Elimina">Elimina</button>
+      </div></li>`}).join('');
+}
+function renderOps(){
+  const ops=[...S.ops].sort((a,b)=>b.time-a.time).slice(0,60);
+  if(!ops.length){$('#opsBody').innerHTML='<tr><td colspan="8" class="empty">Nessuna operazione. Incolla un segnale "Apro una nuova operazione".</td></tr>';return}
+  $('#opsBody').innerHTML=ops.map(o=>{
+    const st=o.status==='aperta'?'<span class="chip todo">aperta</span>':o.stopped?'<span class="chip late">stop</span>':'<span class="chip ok">chiusa</span>';
+    const tps=o.hit.map((h,i)=>`<span class="tpdot ${h?'hit':''}" title="TP${i+1} ${o.tps[i]??''}">${i+1}</span>`).join('');
+    return `<tr><td class="num">${ddmm(o.time)} ${hhmm(o.time)}</td><td><b>${o.side}</b>${o.stub?' <span class="chip vip" title="manca il messaggio del segnale">senza segnale</span>':''}</td>
+      <td class="num">${o.fill??(o.e1!=null?o.e1+'–'+o.e2:'—')}</td><td class="num">${o.sl??'—'}</td><td><div class="tps">${tps}</div></td>
+      <td class="num">${o.closedW?Math.round(o.wpips):'—'}</td><td class="num ${clsR(o.r)}">${o.closedW?fmtR(o.r):'—'}</td><td>${st}</td></tr>`}).join('');
+}
+function renderPhr(){
+  $('#phrDay').textContent=fmtR(dayR());
+  const groups=[...new Set(PHR.map(p=>p.g))];
+  $('#phrases').innerHTML=groups.map(g=>`<div class="phr-group"><h3>${g}</h3>${PHR.map((p,i)=>({p,i})).filter(x=>x.p.g===g).map(({p,i})=>{const [ok,why]=condOk(p.c);const txt=fill(p.t);
+    return `<div class="phr ${ok?'':'off'}"><p>${esc(txt)}${ok?'':`<span class="why">${esc(why)}</span>`}</p><button class="btn small" data-phr="${i}" ${ok?'':'disabled'}>Copia</button></div>`}).join('')}</div>`).join('');
+}
+function renderRep(){const d=$('#repDate');if(!d.value)d.value=dayKey(Date.now());$('#repOut').textContent=report(d.value)}
+function renderSlots(){
+  if(document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#slots')) return;
+  $('#slots').innerHTML=S.settings.slots.map((s,i)=>`<div class="slot">
+    <input type="checkbox" id="slotOn${i}" data-slot="${i}" data-f="on" ${s.on?'checked':''} aria-label="Attiva ${esc(s.label)}">
+    <input type="time" id="slotT${i}" data-slot="${i}" data-f="t" value="${s.t}">
+    <div class="lbl">${esc(s.label)}<small>${esc(s.hint)}</small></div>
+    <span class="chip vip days">${s.days}</span></div>`).join('');
+}
+function renderLog(){$('#log').innerHTML=S.log.length?S.log.slice(0,15).map(l=>`<li><time>${ddmm(l.t)} ${hhmm(l.t)}</time><b>${esc(l.title)}</b> — ${esc(l.body)}</li>`).join(''):'<li class="empty">Ancora nessuna notifica.</li>'}
+
+/* ---------- eventi UI ---------- */
+function previewParse(){const p=parse($('#msg').value);const el=$('#preview');if(!p){el.hidden=true;return}el.hidden=false;
+  let extra='';if(p.side)extra=` · ${p.side} ${p.fill??''}`;if(p.type==='segnale')extra=` · ${p.side} ${p.e1}–${p.e2}, SL ${p.sl}`;if(p.type==='tp')extra+=` · TP${p.n} +${p.pips} pips`;
+  el.innerHTML=`Riconosciuto: <b>${TYPE_LABEL[p.type]}</b>${esc(extra)}${FORWARD[p.type]?' → andrà in coda da inoltrare':''}`}
+$('#msg').addEventListener('input',previewParse);
+$('#btnAdd').onclick=()=>{
+  const txt=$('#msg').value;if(!txt.trim())return;
+  const w=$('#when').value;const t=w?new Date(w).getTime():Date.now();
+  
+  const ev=ingest(txt,$('#link').value.trim(),t);save();
+  $('#msg').value='';$('#link').value='';$('#when').value='';$('#preview').hidden=true;
+  if(ev&&ev.toForward) notify('Da inoltrare adesso',ev.label+(ev.link?'':' · aggiungi il link per aprirlo al volo'));
+  render();
+};
+$('#queue').addEventListener('click',e=>{const b=e.target.closest('button[data-act]');if(!b)return;const ev=S.events.find(x=>x.id===b.dataset.id);if(!ev)return;
+  const a=b.dataset.act;
+  if(a==='copy'){copy(ev.text,b);return}
+  if(a==='fwd'){ev.forwarded=!ev.forwarded;ev.reminded=ev.forwarded}
+  if(a==='link'){const u=window.prompt('Incolla il link del messaggio (tasto destro sul messaggio → Copia link)','');if(u)ev.link=u.trim()}
+  if(a==='del'){if(b.dataset.confirm!=='1'){b.dataset.confirm='1';b.textContent='Conferma';setTimeout(()=>{b.dataset.confirm='';b.textContent='Elimina'},2500);return}S.events=S.events.filter(x=>x!==ev)}
+  save();render();
+});
+$('#phrases').addEventListener('click',e=>{const b=e.target.closest('button[data-phr]');if(!b)return;copy(fill(PHR[+b.dataset.phr].t),b)});
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===b));document.querySelectorAll('[data-pane]').forEach(p=>p.hidden=p.dataset.pane!==tab);try{localStorage.setItem(KEY+'-tab',tab)}catch(e){}});
+try{const t=localStorage.getItem(KEY+'-tab');if(t){const b=document.querySelector(`.tab[data-tab="${t}"]`);b&&b.click()}}catch(e){}
+$('#repDate').addEventListener('change',renderRep);
+$('#btnCopyRep').onclick=e=>copy($('#repOut').textContent,e.target);
+['lDesc','lEntry','lTarget','lStop','lTime','lAcc','lRisk'].forEach(id=>$('#'+id).addEventListener('input',()=>$('#lotOut').textContent=lotMsg()));
+$('#btnCopyLot').onclick=e=>copy(lotMsg(),e.target);
+$('#slots').addEventListener('change',e=>{const i=e.target.dataset.slot;if(i==null)return;const s=S.settings.slots[+i];if(e.target.dataset.f==='on')s.on=e.target.checked;else s.t=e.target.value;save();render()});
+$('#deadline').value=S?S.settings.deadline:10;
+$('#deadline').addEventListener('change',e=>{S.settings.deadline=Math.max(1,+e.target.value||10);save();render()});
+$('#btnTest').onclick=async()=>{try{const j=await api('/api/subscribe',{method:'POST',body:JSON.stringify({test:true})});notify('Prova inviata',j.sent?`Inviata a ${j.sent} dispositivi.`:'Nessun dispositivo iscritto: tocca prima Attiva notifiche.')}catch(e){}};
+$('#btnExport').onclick=()=>{const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='regia-branco-backup-'+dayKey(Date.now())+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
+$('#fileImport').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const s=JSON.parse(r.result);if(s.ops&&s.events){S=s;S.example=false;save();render();notify('Backup importato',`${s.ops.length} operazioni, ${s.events.length} messaggi`)}}catch(err){notify('Importazione non riuscita','Il file non è un backup della Regia.')}};r.readAsText(f)});
+
+/* ---------- ultima analisi ---------- */
+async function readLast(){
+  const b=$('#btnLast');b.disabled=true;$('#lastMeta').innerHTML='<span class="spin"></span>Leggo il canale…';
+  try{const j=await api('/api/ultima-analisi');if(!j.ok)throw new Error(j.error);
+    const a=j.ultima;if(!a){$('#lastMeta').textContent='Nessuna analisi trovata nelle ultime pagine del canale.';return}
+    const q=new Date(a.time).toLocaleString('it-IT',{weekday:'long',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    $('#lastMeta').innerHTML=`Ultima analisi: <b>${esc(a.tipo)}</b> · ${esc(q)} · <a href="https://t.me/${esc(j.canale)}/${a.id}" target="_blank" rel="noopener">apri</a>`;
+    $('#lastAna').textContent=a.text;$('#lastAna').hidden=false;$('#btnCopyLast').hidden=false;
+  }catch(e){if(e.message!=='PIN')$('#lastMeta').textContent=e.message}
+  finally{b.disabled=false}
+}
+$('#btnLast').onclick=readLast;
+$('#btnCopyLast').onclick=e=>copy($('#lastAna').textContent,e.target);
+
+/* ---------- avvio ---------- */
+if(!S) S=blank();
+$('#pinForm').addEventListener('submit',async e=>{e.preventDefault();try{localStorage.setItem(KEY+'-pin',$('#pin').value.trim())}catch(_){}
+  try{await pullState();$('#lock').hidden=true;$('#pin').value=''}catch(err){if(err.message!=='PIN')$('#pinErr').textContent='Server non raggiungibile.'}});
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+if(!pin()) showLock(); else pullState().catch(()=>{});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&pin())pullState().catch(()=>{})});
+updNotifBtn();render();
+setInterval(tick,15000);
+})();
+</script>
+</body>
+</html>
