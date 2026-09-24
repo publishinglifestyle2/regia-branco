@@ -233,7 +233,7 @@ pre.out{background:var(--sunk); border:1px solid var(--line); border-radius:6px;
       </div>
 
       <div data-pane="phr" hidden>
-        <p class="hint" style="margin:0 0 12px">Le frasi si sbloccano in base al risultato vero di oggi (<b id="phrDay">—</b>). Quelle barrate oggi non sarebbero vere.</p>
+        <p class="hint" style="margin:0 0 12px">Tutte copiabili: scegli tu quale mandare. I numeri tra le frasi sono quelli registrati nella Regia (oggi <b id="phrDay">—</b>).</p>
         <div id="phrases"></div>
       </div>
 
@@ -520,8 +520,8 @@ function renderOps(){
 function renderPhr(){
   $('#phrDay').textContent=fmtR(dayR());
   const groups=[...new Set(PHR.map(p=>p.g))];
-  $('#phrases').innerHTML=groups.map(g=>`<div class="phr-group"><h3>${g}</h3>${PHR.map((p,i)=>({p,i})).filter(x=>x.p.g===g).map(({p,i})=>{const [ok,why]=condOk(p.c);const txt=fill(p.t);
-    return `<div class="phr ${ok?'':'off'}"><p>${esc(txt)}${ok?'':`<span class="why">${esc(why)}</span>`}</p><button class="btn small" data-phr="${i}" ${ok?'':'disabled'}>Copia</button></div>`}).join('')}</div>`).join('');
+  $('#phrases').innerHTML=groups.map(g=>`<div class="phr-group"><h3>${g}</h3>${PHR.map((p,i)=>({p,i})).filter(x=>x.p.g===g).map(({p,i})=>{const txt=fill(p.t);
+    return `<div class="phr"><p>${esc(txt)}</p><button class="btn small" data-phr="${i}">Copia</button></div>`}).join('')}</div>`).join('');
 }
 function renderRep(){const d=$('#repDate');if(!d.value)d.value=dayKey(Date.now());$('#repOut').textContent=report(d.value)}
 function renderSlots(){
