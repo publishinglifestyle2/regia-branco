@@ -1,6 +1,5 @@
 import { authorized, deny, readJson, writeJson, pushAll } from './_lib/core.js';
-
-const FORWARD_LABEL = { tp: 'Target preso', alltp: 'Tutti i target', sl: 'Stop toccato', chiusura: 'Chiusura', resoconto: 'Resoconto VIP' };
+import { mergeState } from '../core.js';
 
 export default async function handler(req, res) {
   if (!authorized(req)) return deny(res);
@@ -14,16 +13,18 @@ export default async function handler(req, res) {
     if (!state || !Array.isArray(state.ops) || !Array.isArray(state.events)) {
       return res.status(400).json({ ok: false, error: 'Stato non valido' });
     }
-    const prev = await readJson('state', { events: [] });
-    const known = new Set((prev.events || []).map((e) => e.id));
-    await writeJson('state', state);
+    const prev = await readJson('state', null);
+    const known = new Set((prev?.events || []).map((e) => e.id));
+    // unione per id: i messaggi arrivati dal bot nel frattempo non vengono persi
+    const merged = mergeState(prev, state);
+    await writeJson('state', merged);
 
     // messaggi nuovi da inoltrare: avvisa gli altri dispositivi (es. aggiunto dal Mac → notifica su iPhone)
-    const fresh = state.events.filter((e) => e.toForward && !e.forwarded && !known.has(e.id));
+    const fresh = merged.events.filter((e) => e.toForward && !e.forwarded && !known.has(e.id));
     for (const e of fresh) {
-      await pushAll('Da inoltrare adesso', e.label || FORWARD_LABEL[e.kind] || 'Nuovo messaggio VIP', { skipDevice: deviceId, tag: e.id });
+      await pushAll('Da inoltrare adesso', e.label || 'Nuovo messaggio VIP', { skipDevice: deviceId, tag: e.id });
     }
-    return res.status(200).json({ ok: true, pushed: fresh.length });
+    return res.status(200).json({ ok: true, pushed: fresh.length, state: merged });
   }
 
   res.setHeader('Allow', 'GET, PUT');

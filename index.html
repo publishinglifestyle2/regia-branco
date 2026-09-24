@@ -273,6 +273,21 @@ pre.out{background:var(--sunk); border:1px solid var(--line); border-radius:6px;
           <button class="btn" id="btnExport">Esporta backup</button>
           <label class="btn" style="text-transform:none; letter-spacing:0; font-size:14px; color:var(--ink); margin:0">Importa backup<input type="file" id="fileImport" accept="application/json" hidden></label>
         </div>
+        <h2 style="margin-top:22px; font-size:14px">Bot Telegram</h2>
+        <p class="hint" id="botStatus" style="margin:4px 0 10px">Controllo lo stato…</p>
+        <details id="botHelp">
+          <summary class="hint" style="cursor:pointer">Come si collega (3 passi)</summary>
+          <ol class="hint" style="padding-left:18px">
+            <li>Su Telegram apri <b>@BotFather</b>, scrivi <code>/newbot</code>, scegli un nome e uno username che finisce con "bot". Ti risponde con un <b>token</b>.</li>
+            <li>Incolla il token qui sotto e tocca <b>Collega bot</b>.</li>
+            <li>Nel canale VIP: Amministratori → Aggiungi amministratore → cerca il tuo bot. Basta il permesso minimo: non deve pubblicare nulla. Da quel momento ogni messaggio del VIP entra qui da solo.</li>
+          </ol>
+        </details>
+        <div class="row" style="margin-top:10px">
+          <div style="flex:2 1 240px"><label for="botToken">Token del bot</label><input type="password" id="botToken" autocomplete="off" placeholder="123456789:AA…"></div>
+          <button class="btn primary" id="btnBot">Collega bot</button>
+          <button class="btn" id="btnBotUnbind" hidden>Cambia canale</button>
+        </div>
         <h2 style="margin-top:20px; font-size:14px">Ultime notifiche</h2>
         <ul class="log" id="log"></ul>
       </div>
@@ -282,7 +297,8 @@ pre.out{background:var(--sunk); border:1px solid var(--line); border-radius:6px;
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script>
+<script type="module">
+import * as Core from '/core.js';
 (function(){
 const W=[0.1,0.2,0.3,0.4];
 const KEY='regia-branco-v1';
@@ -308,88 +324,25 @@ const DEFAULT_SLOTS=[
 ];
 
 let S=load();
-function blank(){return {ops:[],events:[],fired:{},log:[],example:false,settings:{deadline:10,slots:JSON.parse(JSON.stringify(DEFAULT_SLOTS))}}}
+function blank(){return {ops:[],events:[],deleted:[],fired:{},log:[],example:false,settings:{deadline:10,slots:JSON.parse(JSON.stringify(DEFAULT_SLOTS))}}}
 function load(){try{const r=localStorage.getItem(KEY);if(r){const s=JSON.parse(r);s.settings=s.settings||blank().settings;s.fired=s.fired||{};s.log=s.log||[];return s}}catch(e){}return null}
 let syncTimer=null,pending=false,pulled=false;
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}clearTimeout(syncTimer);pending=true;syncTimer=setTimeout(pushState,700)}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}clearTimeout(syncTimer);pending=true;editSeq++;syncTimer=setTimeout(pushState,700)}
 const DEVICE=(()=>{try{let d=localStorage.getItem(KEY+'-device');if(!d){d=uid();localStorage.setItem(KEY+'-device',d)}return d}catch(e){return 'x'}})();
 function pin(){try{return localStorage.getItem(KEY+'-pin')||''}catch(e){return ''}}
 async function api(path,opts={}){const r=await fetch(path,{...opts,headers:{'Content-Type':'application/json','x-regia-pin':pin(),...(opts.headers||{})}});
   if(r.status===401){showLock('PIN errato o scaduto.');throw new Error('PIN')}return r.json()}
-async function pushState(){if(!pulled)return;try{const {log,fired,...rest}=S;await api('/api/state',{method:'PUT',body:JSON.stringify({state:rest,deviceId:DEVICE})});$('#syncErr').hidden=true;pending=false}
+let editSeq=0;
+async function pushState(){if(!pulled)return;const seq=editSeq;try{const {log,fired,...rest}=S;const j=await api('/api/state',{method:'PUT',body:JSON.stringify({state:rest,deviceId:DEVICE})});$('#syncErr').hidden=true;pending=false;
+  if(j.state&&seq===editSeq){const lg=S.log;S={...blank(),...j.state,log:lg||[],fired:{}};try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}render()}}
   catch(e){if(e.message!=='PIN'){$('#syncErr').hidden=false;$('#syncErr').textContent='Non riesco a salvare online: controlla la connessione. I dati restano su questo telefono e li reinvio al prossimo salvataggio.'}}}
 async function pullState(){if(pending&&pulled)return;const j=await api('/api/state');pulled=true;if(j.ok&&j.state){const log=S.log;S={...blank(),...j.state,log:log||[],fired:{}};try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}else if(j.ok&&!j.state){pushState()}render()}
 function showLock(msg){$('#lock').hidden=false;$('#pinErr').textContent=msg||'';setTimeout(()=>$('#pin').focus(),50)}
 
-/* ---------- parser ---------- */
-function num(s){return parseFloat(String(s).replace(',','.'))}
-function parse(text){
-  const t=text.trim(); if(!t) return null;
-  const ref=t.match(/\((BUY|SELL)\s+([\d.,]+)\)/i);
-  const side=ref?ref[1].toUpperCase():null, fill=ref?num(ref[2]):null;
-  if(/RESOCONTO DELLA GIORNATA/i.test(t)) return {type:'resoconto'};
-  if(/tutti i target presi/i.test(t)){const p=t.match(/\+\s*(\d+)\s*pips/i);return {type:'alltp',side,fill,pips:p?+p[1]:null}}
-  const tp=t.match(/TP\s*([1-4])\s*✅\s*\+?\s*(\d+)\s*pips/i);
-  if(tp) return {type:'tp',n:+tp[1],pips:+tp[2],side,fill};
-  if(/(SL toccato|stop\s*loss\s*preso|stop preso|stop toccato)/i.test(t)) return {type:'sl',side,fill};
-  if(/(chiusa in profitto|portata a casa|chiuso in profitto|chiusura manuale)/i.test(t)){const px=t.match(/chius\w*\s+a\s+([\d.,]{6,})/i);return {type:'chiusura',side,fill,price:px?num(px[1]):null}}
-  const sig=t.match(/XAUUSD\s+(BUY|SELL)[\s\S]*?Entry:\s*([\d.,]+)\s*-\s*([\d.,]+)[\s\S]*?SL:\s*([\d.,]+)/i);
-  const tps=[...t.matchAll(/TP([1-4]):\s*([\d.,]+)/gi)];
-  if(sig&&tps.length>=1){const arr=[null,null,null,null];tps.forEach(m=>arr[+m[1]-1]=num(m[2]));
-    return {type:'segnale',side:sig[1].toUpperCase(),e1:num(sig[2]),e2:num(sig[3]),sl:num(sig[4]),tps:arr}}
-  const at=t.match(/Siamo a\s*([\d.,]+)/i);
-  if(at) return {type:'aggiornamento',side,fill,price:num(at[1])};
-  return {type:'altro'};
-}
-const TYPE_LABEL={segnale:'Segnale (resta nel VIP)',tp:'Target preso',alltp:'Tutti i target presi',sl:'Stop toccato',chiusura:'Chiusura manuale',aggiornamento:'Aggiornamento (resta nel VIP)',resoconto:'Resoconto della giornata',altro:'Messaggio non riconosciuto'};
-const FORWARD={tp:true,alltp:true,sl:true,chiusura:true,resoconto:true};
-
-/* ---------- operazioni ---------- */
-function risk(op){const f=op.fill??(op.e1+op.e2)/2;return op.sl?Math.abs(f-op.sl):null}
-function dir(op){return op.side==='BUY'?1:-1}
-function findOp(side,fill){
-  if(!side||fill==null) return null;
-  const c=S.ops.filter(o=>o.side===side);
-  let o=c.filter(o=>o.fill!=null&&Math.abs(o.fill-fill)<0.01).sort((a,b)=>b.time-a.time)[0];
-  if(o) return o;
-  o=c.filter(o=>o.fill==null&&o.e1!=null&&fill>=Math.min(o.e1,o.e2)-0.6&&fill<=Math.max(o.e1,o.e2)+0.6).sort((a,b)=>(a.status==='aperta'?0:1)-(b.status==='aperta'?0:1)||b.time-a.time)[0];
-  return o||null;
-}
-function stub(side,fill,time){const op={id:uid(),side,fill,e1:null,e2:null,sl:null,tps:[null,null,null,null],time,hit:[false,false,false,false],tpPips:[null,null,null,null],closedW:0,r:0,wpips:0,status:'aperta',stopped:false,stub:true};S.ops.push(op);return op}
-function closeTp(op,i,pips){ // chiude la posizione i (0-based)
-  if(op.hit[i]) return 0;
-  if(pips==null&&op.tps[i]!=null&&op.fill!=null) pips=Math.round(Math.abs(op.tps[i]-op.fill)*10);
-  op.hit[i]=true; op.tpPips[i]=pips; op.closedW+=W[i]; op.wpips+=W[i]*(pips||0);
-  const rk=risk(op); const dr=(rk&&pips!=null)?W[i]*(pips/10)/rk:0; op.r+=dr; return dr;
-}
-function finish(op,t){if(op.closedW>0.999){op.status='chiusa';op.closedAt=t}}
-
+/* ---------- messaggi VIP: logica condivisa con il bot (core.js) ---------- */
+const num=Core.num, parse=Core.parse, TYPE_LABEL=Core.TYPE_LABEL, FORWARD=Core.FORWARD;
 function ingest(text,link,time,opts={}){
-  const p=parse(text); if(!p) return null;
-  const ev={id:uid(),time,kind:p.type,text:text.trim(),link:link||'',rDelta:0,toForward:!!FORWARD[p.type],forwarded:!!opts.forwarded,reminded:!!opts.forwarded};
-  let op=null;
-  if(p.type==='segnale'){
-    op={id:uid(),side:p.side,e1:p.e1,e2:p.e2,sl:p.sl,tps:p.tps,fill:null,time,hit:[false,false,false,false],tpPips:[null,null,null,null],closedW:0,r:0,wpips:0,status:'aperta',stopped:false};
-    S.ops.push(op); ev.label=`${p.side} ${p.e1}–${p.e2} · SL ${p.sl}`;
-  } else if(['tp','alltp','sl','chiusura','aggiornamento'].includes(p.type)){
-    op=findOp(p.side,p.fill)||(p.side?stub(p.side,p.fill,time):null);
-    if(op&&op.fill==null&&p.fill!=null) op.fill=p.fill;
-    const tag=op?`${op.side} ${op.fill??''}`:'operazione sconosciuta';
-    if(op&&p.type==='tp'){let dr=0;for(let i=0;i<p.n-1;i++) if(!op.hit[i]&&op.tps[i]!=null) dr+=closeTp(op,i,null);dr+=closeTp(op,p.n-1,p.pips);ev.rDelta=dr;finish(op,time);ev.label=`TP${p.n} ✅ +${p.pips} pips · ${tag}`}
-    if(op&&p.type==='alltp'){let dr=0;for(let i=0;i<4;i++) if(!op.hit[i]) dr+=closeTp(op,i,i===3?p.pips:null);ev.rDelta=dr;op.closedW=1;finish(op,time);ev.label=`Tutti i target ✅ +${p.pips??'?'} pips · ${tag}`}
-    if(op&&p.type==='sl'){const rem=Math.max(0,1-op.closedW);const rk=risk(op);const dr=rk?-rem:0;op.r+=dr;op.wpips-=rem*(rk?rk*10:0);op.closedW=1;op.stopped=true;op.status='chiusa';op.closedAt=time;ev.rDelta=dr;ev.label=`Stop ❌ · ${tag}${rk?' · '+fmtR(dr):''}`}
-    if(op&&p.type==='chiusura'){let px=p.price??opts.price??op.lastPrice;
-      if(px==null&&!opts.silent){const a=window.prompt(`Chiusura manuale di ${tag}: a che prezzo? (serve per calcolare il risultato)`, '');px=a?num(a):null}
-      const rem=Math.max(0,1-op.closedW);const rk=risk(op);let dr=0;
-      if(px!=null&&op.fill!=null){const d=(px-op.fill)*dir(op);op.wpips+=rem*d*10;if(rk)dr=rem*d/rk}
-      op.r+=dr;op.closedW=1;op.status='chiusa';op.closedAt=time;op.manual=px;ev.rDelta=dr;ev.label=`Chiusa a mano ${px??'?'} · ${tag}`}
-    if(op&&p.type==='aggiornamento'){op.lastPrice=p.price;ev.label=`Siamo a ${p.price} · ${tag}`}
-    if(!op) ev.label=TYPE_LABEL[p.type];
-  } else if(p.type==='resoconto'){ev.label='Resoconto VIP della giornata'}
-  else ev.label='Messaggio non riconosciuto';
-  ev.opId=op?op.id:null;
-  S.events.push(ev);
-  return ev;
+  return Core.ingest(S,text,link,time,{...opts,ask:tag=>{const a=window.prompt(`Chiusura manuale di ${tag}: a che prezzo? (serve per calcolare il risultato)`,'');return a?num(a):null}});
 }
 
 /* ---------- conti ---------- */
@@ -544,7 +497,7 @@ function renderQueue(){
     const chip=e.forwarded?'<span class="chip ok">inoltrato</span>':late?'<span class="chip late">in ritardo</span>':'<span class="chip todo">da inoltrare</span>';
     return `<li class="item k-${e.kind} ${e.forwarded?'done':''}">
       <div class="item-top"><span class="item-title">${esc(e.label)}</span>${chip}</div>
-      <div class="item-meta num">${ddmm(e.time)} ${hhmm(e.time)}${e.rDelta?` · <span class="${clsR(e.rDelta)}">${fmtR(e.rDelta)}</span>`:''}</div>
+      <div class="item-meta num">${ddmm(e.time)} ${hhmm(e.time)}${e.src==='bot'?' · dal bot':''}${e.rDelta?` · <span class="${clsR(e.rDelta)}">${fmtR(e.rDelta)}</span>`:''}</div>
       <div class="actions">
         ${L&&L.app?`<a class="btn small primary" href="${esc(L.app)}">Apri in Telegram</a>`:''}
         ${L&&L.web?`<a class="btn small" href="${esc(L.web)}" target="_blank" rel="noopener">Apri link</a>`:''}
@@ -598,9 +551,9 @@ $('#btnAdd').onclick=()=>{
 $('#queue').addEventListener('click',e=>{const b=e.target.closest('button[data-act]');if(!b)return;const ev=S.events.find(x=>x.id===b.dataset.id);if(!ev)return;
   const a=b.dataset.act;
   if(a==='copy'){copy(ev.text,b);return}
-  if(a==='fwd'){ev.forwarded=!ev.forwarded;ev.reminded=ev.forwarded}
-  if(a==='link'){const u=window.prompt('Incolla il link del messaggio (tasto destro sul messaggio → Copia link)','');if(u)ev.link=u.trim()}
-  if(a==='del'){if(b.dataset.confirm!=='1'){b.dataset.confirm='1';b.textContent='Conferma';setTimeout(()=>{b.dataset.confirm='';b.textContent='Elimina'},2500);return}S.events=S.events.filter(x=>x!==ev)}
+  if(a==='fwd'){ev.forwarded=!ev.forwarded;ev.reminded=ev.forwarded;ev.u=Date.now()}
+  if(a==='link'){const u=window.prompt('Incolla il link del messaggio (tasto destro sul messaggio → Copia link)','');if(u){ev.link=u.trim();ev.u=Date.now()}}
+  if(a==='del'){if(b.dataset.confirm!=='1'){b.dataset.confirm='1';b.textContent='Conferma';setTimeout(()=>{b.dataset.confirm='';b.textContent='Elimina'},2500);return}S.events=S.events.filter(x=>x!==ev);(S.deleted=S.deleted||[]).push(ev.id)}
   save();render();
 });
 $('#phrases').addEventListener('click',e=>{const b=e.target.closest('button[data-phr]');if(!b)return;copy(fill(PHR[+b.dataset.phr].t),b)});
@@ -631,6 +584,20 @@ async function readLast(){
 $('#btnLast').onclick=readLast;
 $('#btnCopyLast').onclick=e=>copy($('#lastAna').textContent,e.target);
 
+/* ---------- bot telegram ---------- */
+async function botStatus(){try{const j=await api('/api/telegram-setup');const el=$('#botStatus');
+  if(!j.connected){el.innerHTML='<b>Non collegato.</b> Per ora incolli tu i messaggi del VIP.';$('#btnBotUnbind').hidden=true;return}
+  const last=j.lastAt?new Date(j.lastAt).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'mai';
+  el.innerHTML=`<b>Collegato: @${esc(j.bot)}</b> · `+(j.vipTitle?`legge il canale <b>${esc(j.vipTitle)}</b> · ultimo messaggio ${last}`:'in attesa del primo messaggio: aggiungilo come amministratore del VIP')+(j.webhookError?`<br><span class="neg">Errore Telegram: ${esc(j.webhookError)}</span>`:'');
+  $('#btnBotUnbind').hidden=!j.vipTitle;$('#botHelp').open=!j.vipTitle;
+}catch(e){}}
+$('#btnBot').onclick=async e=>{const t=$('#botToken').value.trim();if(!t){$('#botStatus').textContent='Incolla prima il token di @BotFather.';return}
+  e.target.disabled=true;try{const j=await api('/api/telegram-setup',{method:'POST',body:JSON.stringify({token:t})});
+    if(!j.ok)throw new Error(j.error);$('#botToken').value='';notify('Bot collegato','@'+j.bot+': ora aggiungilo come amministratore del canale VIP.');botStatus()}
+  catch(err){if(err.message!=='PIN')$('#botStatus').textContent=err.message}finally{e.target.disabled=false}};
+$('#btnBotUnbind').onclick=async()=>{await api('/api/telegram-setup',{method:'POST',body:JSON.stringify({action:'scollega-canale'})});botStatus()};
+document.querySelector('.tab[data-tab="plan"]').addEventListener('click',botStatus);
+
 /* ---------- avvio ---------- */
 if(!S) S=blank();
 $('#pinForm').addEventListener('submit',async e=>{e.preventDefault();try{localStorage.setItem(KEY+'-pin',$('#pin').value.trim())}catch(_){}
@@ -638,6 +605,7 @@ $('#pinForm').addEventListener('submit',async e=>{e.preventDefault();try{localSt
 if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
 if(!pin()) showLock(); else pullState().catch(()=>{});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&pin())pullState().catch(()=>{})});
+setInterval(()=>{if(!document.hidden&&pin()&&!pending&&$('#lock').hidden)pullState().catch(()=>{})},30000);
 updNotifBtn();render();
 setInterval(tick,15000);
 })();
